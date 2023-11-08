@@ -15,7 +15,7 @@ spec:
     - --nodename
     - vkubelet-mock-0
     - --provider
-    - mock
+    - grpc
     - --provider-config
     - /vkubelet-mock-0-cfg.json
     - --startup-timeout
