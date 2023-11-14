@@ -1,29 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pauseexample1
+  name: pause
 spec:
   containers:
   - name: pauseexample1
     imagePullPolicy: Always
-    image: gcr.io/google_containers/pause:1.0
-    resources:
-      requests:
-        memory: 1G
-        cpu: 1
-    ports:
-    - containerPort: 80
-      name: http
-      protocol: TCP
-    - containerPort: 443
-      name: https
-  dnsPolicy: ClusterFirst
-  nodeSelector:
-    kubernetes.io/role: agent
-    beta.kubernetes.io/os: linux
-    type: virtual-kubelet
-  tolerations:
-  - key: virtual-kubelet.io/provider
-    operator: Exists
-  - key: azure.com/aci
-    effect: NoSchedule
+    image: virtual-kubelet:3b9bfa47e839522bc19b6cb90156f733f645dca7600f292421f9657710498ac4

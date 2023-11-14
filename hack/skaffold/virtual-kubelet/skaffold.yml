@@ -1,11 +1,17 @@
-apiVersion: skaffold/v2beta10
+apiVersion: skaffold/v2beta29
 kind: Config
 build:
+  tagPolicy:
+    sha256: {}
   artifacts:
   - image: virtual-kubelet
     docker:
       # Use a Dockerfile specific for development only.
       dockerfile: hack/skaffold/virtual-kubelet/Dockerfile
+    hooks:
+      after:
+        - command: ["kind", "load", "docker-image", "virtual-kubelet:latest"]
+          os: ["darwin", "linux"]
 deploy:
   kubectl:
     manifests:

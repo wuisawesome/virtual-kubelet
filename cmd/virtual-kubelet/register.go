@@ -22,7 +22,7 @@ func registerMock(s *provider.Store) {
 
 func registerGrpc(s *provider.Store) {
 	/* #nosec */
-	s.Register("mock", func(cfg provider.InitConfig) (provider.Provider, error) { //nolint:errcheck
+	s.Register("grpc", func(cfg provider.InitConfig) (provider.Provider, error) { //nolint:errcheck
 		return grpc.NewGrpcProvider(
 			cfg.ConfigPath,
 		)
