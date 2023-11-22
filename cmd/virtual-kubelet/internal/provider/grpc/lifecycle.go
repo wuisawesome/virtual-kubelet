@@ -9,7 +9,7 @@ import (
 
 
 // CreatePod takes a Kubernetes Pod and deploys it within the provider.
-func (*GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) error {
+func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) error {
 	logger := log.GetLogger(ctx)
 	logger.Error("CreatePod")
 	return nil
