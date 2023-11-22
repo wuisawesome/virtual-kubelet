@@ -6,10 +6,6 @@ spec:
   containers:
   - name: jaeger-tracing
     image: jaegertracing/all-in-one:1.22
-    args:
-      - python
-      - -m
-      - sky_atc
   - name: pod-provider
     image: sky-atc:dev
     # Loaded into KinD

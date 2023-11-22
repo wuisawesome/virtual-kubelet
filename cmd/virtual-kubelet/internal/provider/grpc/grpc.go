@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"google.golang.org/grpc"
+	"fmt"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/virtual-kubelet/virtual-kubelet/log"
 	"github.com/virtual-kubelet/virtual-kubelet/node/api"
 	"github.com/virtual-kubelet/virtual-kubelet/node/api/statsv1alpha1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 
@@ -33,24 +34,27 @@ type GrpcConfig struct { //nolint:golint
 	ServerAddr        string            `json:"server_addr,omitempty"`
 }
 
-func newGrpcProvider(configPath *GrpcConfig) (*GrpcProvider, error) {
-	grpcChannel, err := grpc.Dial(configPath.ServerAddr)
+func newGrpcProvider(config GrpcConfig) (*GrpcProvider, error) {
+	grpcChannel, err := grpc.Dial(config.ServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 	return &GrpcProvider{
-		client: NewContainerProviderClient(grpcChannel),
+		client: NewPodProviderClient(grpcChannel),
 	}, nil
 }
 
-func loadGrpcConfig(configPath string) (config *GrpcConfig, err error) {
+func loadGrpcConfig(configPath string) (config GrpcConfig, err error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return config, err
 	}
-	configMap := map[string]GrpcConfig{}
-	err = json.Unmarshal(data, &configMap)
-	return config, err
+
+	if err = json.Unmarshal(data, &config); err != nil {
+		return config, fmt.Errorf("Error unmarshalling string %s. %s", data, err)
+	}
+
+	return config, nil
 }
 
 func NewGrpcProvider(configPath string) (*GrpcProvider, error) {
@@ -63,13 +67,29 @@ func NewGrpcProvider(configPath string) (*GrpcProvider, error) {
 }
 
 
-func (*GrpcProvider) ConfigureNode(ctx context.Context, node *v1.Node) {
+func (provider *GrpcProvider) ConfigureNode(ctx context.Context, node *v1.Node) {
 	logger := log.GetLogger(ctx)
-	logger.Error("ConfigureNode")
-	node.Status.Capacity = v1.ResourceList{
-		"cpu":    resource.MustParse("99"),
-		"memory": resource.MustParse("100Gi"),
-		"pods":   resource.MustParse("1000"),
+	logger.Info("ConfigureNode")
+
+	node_json, err := json.Marshal(node)
+	if err != nil {
+		logger.Fatalf("Couldn't marshal node %v. %s", node, err)
+		return
+	}
+
+	request := ConfigureNodeRequest{
+		CoreV1NodeJson: string(node_json),
+	}
+	reply, err := provider.client.ConfigureNode(ctx, &request)
+	if err != nil {
+		logger.Fatalf("Request failed %v. %s", request, err)
+		return
+	}
+
+	err = json.Unmarshal([]byte(reply.GetCoreV1NodeJson()), node)
+	if err != nil {
+		logger.Fatalf("Couldn't deserialize reply %v. %s", request, err)
+		return
 	}
 }
 

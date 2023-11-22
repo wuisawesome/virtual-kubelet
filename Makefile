@@ -70,7 +70,7 @@ docker:
 clean:
 	@echo "Clean..."
 	rm -rf bin
-	rm cmd/virtual-kubelet/internal/provider/grpc/*pb.go
+	rm -f cmd/virtual-kubelet/internal/provider/grpc/*pb.go
 
 vet:
 	@echo "go vet'ing..."
