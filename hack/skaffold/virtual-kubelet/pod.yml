@@ -6,9 +6,17 @@ spec:
   containers:
   - name: jaeger-tracing
     image: jaegertracing/all-in-one:1.22
+    args:
+      - python
+      - -m
+      - sky_atc
+  - name: pod-provider
+    image: sky-atc:dev
+    # Loaded into KinD
+    imagePullPolicy: Never
   - name: vk
     image: virtual-kubelet:latest
-    # "IfNotPresent" is used to prevent Minikube from trying to pull from the registry (and failing) in the first place.
+    # Loaded into KinD
     imagePullPolicy: Never
     args:
     - /virtual-kubelet

@@ -2,7 +2,10 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"io"
+	"os"
+	"google.golang.org/grpc"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/virtual-kubelet/virtual-kubelet/log"
@@ -14,6 +17,7 @@ import (
 
 
 type GrpcProvider struct { //nolint:golint
+	client PodProviderClient
 	// nodeName           string
 	// operatingSystem    string
 	// internalIP         string
@@ -25,16 +29,37 @@ type GrpcProvider struct { //nolint:golint
 }
 
 // GrpcConfig contains a mock virtual-kubelet's configurable parameters.
-// type GrpcConfig struct { //nolint:golint
-// 	CPU        string            `json:"cpu,omitempty"`
-// 	Memory     string            `json:"memory,omitempty"`
-// 	Pods       string            `json:"pods,omitempty"`
-// 	Others     map[string]string `json:"others,omitempty"`
-// 	ProviderID string            `json:"providerID,omitempty"`
-// }
+type GrpcConfig struct { //nolint:golint
+	ServerAddr        string            `json:"server_addr,omitempty"`
+}
+
+func newGrpcProvider(configPath *GrpcConfig) (*GrpcProvider, error) {
+	grpcChannel, err := grpc.Dial(configPath.ServerAddr)
+	if err != nil {
+		return nil, err
+	}
+	return &GrpcProvider{
+		client: NewContainerProviderClient(grpcChannel),
+	}, nil
+}
+
+func loadGrpcConfig(configPath string) (config *GrpcConfig, err error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return config, err
+	}
+	configMap := map[string]GrpcConfig{}
+	err = json.Unmarshal(data, &configMap)
+	return config, err
+}
 
 func NewGrpcProvider(configPath string) (*GrpcProvider, error) {
-	return &GrpcProvider{}, nil
+	config, err := loadGrpcConfig(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return newGrpcProvider(config)
 }
 
 

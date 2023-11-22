@@ -43,6 +43,8 @@ build: build_tags := netgo osusergo
 build: OUTPUT_DIR ?= bin
 build: authors
 	@echo "Building..."
+	protoc --go_out=. --go_opt=paths=source_relative cmd/virtual-kubelet/internal/provider/grpc/pod_provider.proto
+	protoc --go-grpc_out=. --go-grpc_opt=paths=source_relative cmd/virtual-kubelet/internal/provider/grpc/pod_provider.proto
 	CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o $(OUTPUT_DIR)/$(binary) $(if $V,-v) $(VERSION_FLAGS) ./cmd/$(binary)
 
 .PHONY: tags
@@ -68,6 +70,7 @@ docker:
 clean:
 	@echo "Clean..."
 	rm -rf bin
+	rm cmd/virtual-kubelet/internal/provider/grpc/*pb.go
 
 vet:
 	@echo "go vet'ing..."
