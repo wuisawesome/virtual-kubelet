@@ -2,6 +2,8 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
+
 
 	"github.com/virtual-kubelet/virtual-kubelet/log"
 	corev1 "k8s.io/api/core/v1"
@@ -11,7 +13,22 @@ import (
 // CreatePod takes a Kubernetes Pod and deploys it within the provider.
 func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) error {
 	logger := log.GetLogger(ctx)
-	logger.Error("CreatePod")
+	logger.Info("CreatePod")
+
+	pod_json, err := json.Marshal(pod)
+	if err != nil {
+		logger.Errorf("Couldn't marshal pod %v. %s", pod, err)
+		return err
+	}
+
+	request := CreatePodRequest{
+		CoreV1PodJson: string(pod_json),
+	}
+	_, err = provider.client.CreatePod(ctx, &request)
+	if err != nil {
+		logger.Errorf("Request failed %v. %s", request, err)
+		return err
+	}
 	return nil
 }
 

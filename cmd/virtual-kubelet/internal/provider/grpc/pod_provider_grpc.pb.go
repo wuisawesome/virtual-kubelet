@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	PodProvider_ConfigureNode_FullMethodName = "/PodProvider/ConfigureNode"
-	PodProvider_CreateNode_FullMethodName    = "/PodProvider/CreateNode"
+	PodProvider_CreatePod_FullMethodName     = "/PodProvider/CreatePod"
 )
 
 // PodProviderClient is the client API for PodProvider service.
@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PodProviderClient interface {
 	ConfigureNode(ctx context.Context, in *ConfigureNodeRequest, opts ...grpc.CallOption) (*ConfigureNodeReply, error)
-	CreateNode(ctx context.Context, in *CreateNodeRequest, opts ...grpc.CallOption) (*CreateNodeReply, error)
+	CreatePod(ctx context.Context, in *CreatePodRequest, opts ...grpc.CallOption) (*CreatePodReply, error)
 }
 
 type podProviderClient struct {
@@ -48,9 +48,9 @@ func (c *podProviderClient) ConfigureNode(ctx context.Context, in *ConfigureNode
 	return out, nil
 }
 
-func (c *podProviderClient) CreateNode(ctx context.Context, in *CreateNodeRequest, opts ...grpc.CallOption) (*CreateNodeReply, error) {
-	out := new(CreateNodeReply)
-	err := c.cc.Invoke(ctx, PodProvider_CreateNode_FullMethodName, in, out, opts...)
+func (c *podProviderClient) CreatePod(ctx context.Context, in *CreatePodRequest, opts ...grpc.CallOption) (*CreatePodReply, error) {
+	out := new(CreatePodReply)
+	err := c.cc.Invoke(ctx, PodProvider_CreatePod_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *podProviderClient) CreateNode(ctx context.Context, in *CreateNodeReques
 // for forward compatibility
 type PodProviderServer interface {
 	ConfigureNode(context.Context, *ConfigureNodeRequest) (*ConfigureNodeReply, error)
-	CreateNode(context.Context, *CreateNodeRequest) (*CreateNodeReply, error)
+	CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error)
 	mustEmbedUnimplementedPodProviderServer()
 }
 
@@ -73,8 +73,8 @@ type UnimplementedPodProviderServer struct {
 func (UnimplementedPodProviderServer) ConfigureNode(context.Context, *ConfigureNodeRequest) (*ConfigureNodeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConfigureNode not implemented")
 }
-func (UnimplementedPodProviderServer) CreateNode(context.Context, *CreateNodeRequest) (*CreateNodeReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateNode not implemented")
+func (UnimplementedPodProviderServer) CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePod not implemented")
 }
 func (UnimplementedPodProviderServer) mustEmbedUnimplementedPodProviderServer() {}
 
@@ -107,20 +107,20 @@ func _PodProvider_ConfigureNode_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PodProvider_CreateNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateNodeRequest)
+func _PodProvider_CreatePod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePodRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PodProviderServer).CreateNode(ctx, in)
+		return srv.(PodProviderServer).CreatePod(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PodProvider_CreateNode_FullMethodName,
+		FullMethod: PodProvider_CreatePod_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PodProviderServer).CreateNode(ctx, req.(*CreateNodeRequest))
+		return srv.(PodProviderServer).CreatePod(ctx, req.(*CreatePodRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -137,8 +137,8 @@ var PodProvider_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PodProvider_ConfigureNode_Handler,
 		},
 		{
-			MethodName: "CreateNode",
-			Handler:    _PodProvider_CreateNode_Handler,
+			MethodName: "CreatePod",
+			Handler:    _PodProvider_CreatePod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
