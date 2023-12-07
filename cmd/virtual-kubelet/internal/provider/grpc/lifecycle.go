@@ -42,9 +42,24 @@ func (*GrpcProvider )UpdatePod(ctx context.Context, pod *corev1.Pod) error {
 // DeletePod takes a Kubernetes Pod and deletes it from the provider. Once a pod is deleted, the provider is
 // expected to call the NotifyPods callback with a terminal pod status where all the containers are in a terminal
 // state, as well as the pod. DeletePod may be called multiple times for the same pod.
-func (*GrpcProvider) DeletePod(ctx context.Context, pod *corev1.Pod) error {
+func (provider *GrpcProvider) DeletePod(ctx context.Context, pod *corev1.Pod) error {
 	logger := log.GetLogger(ctx)
-	logger.Error("DeletePod")
+	logger.Info("DeletePod")
+
+	pod_json, err := json.Marshal(pod)
+	if err != nil {
+		logger.Errorf("Couldn't marshal pod %v. %s", pod, err)
+		return err
+	}
+
+	request := DeletePodRequest{
+		CoreV1PodJson: string(pod_json),
+	}
+	_, err = provider.client.DeletePod(ctx, &request)
+	if err != nil {
+		logger.Errorf("Request failed %v. %s", request, err)
+		return err
+	}
 	return nil
 }
 

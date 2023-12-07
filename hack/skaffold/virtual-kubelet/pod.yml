@@ -10,6 +10,9 @@ spec:
     image: sky-atc:dev
     # Loaded into KinD
     imagePullPolicy: Never
+    env:
+      - name: RUNPOD_API_KEY
+        value: WP6OY7JU6DKH90UWO3Y6P56C5Z6HYSBKFO6TT6CW
   - name: vk
     image: virtual-kubelet:latest
     # Loaded into KinD

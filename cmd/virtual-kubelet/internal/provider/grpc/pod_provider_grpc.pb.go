@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	PodProvider_ConfigureNode_FullMethodName = "/PodProvider/ConfigureNode"
 	PodProvider_CreatePod_FullMethodName     = "/PodProvider/CreatePod"
+	PodProvider_DeletePod_FullMethodName     = "/PodProvider/DeletePod"
 )
 
 // PodProviderClient is the client API for PodProvider service.
@@ -29,6 +30,7 @@ const (
 type PodProviderClient interface {
 	ConfigureNode(ctx context.Context, in *ConfigureNodeRequest, opts ...grpc.CallOption) (*ConfigureNodeReply, error)
 	CreatePod(ctx context.Context, in *CreatePodRequest, opts ...grpc.CallOption) (*CreatePodReply, error)
+	DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*DeletePodReply, error)
 }
 
 type podProviderClient struct {
@@ -57,12 +59,22 @@ func (c *podProviderClient) CreatePod(ctx context.Context, in *CreatePodRequest,
 	return out, nil
 }
 
+func (c *podProviderClient) DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*DeletePodReply, error) {
+	out := new(DeletePodReply)
+	err := c.cc.Invoke(ctx, PodProvider_DeletePod_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PodProviderServer is the server API for PodProvider service.
 // All implementations must embed UnimplementedPodProviderServer
 // for forward compatibility
 type PodProviderServer interface {
 	ConfigureNode(context.Context, *ConfigureNodeRequest) (*ConfigureNodeReply, error)
 	CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error)
+	DeletePod(context.Context, *DeletePodRequest) (*DeletePodReply, error)
 	mustEmbedUnimplementedPodProviderServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedPodProviderServer) ConfigureNode(context.Context, *ConfigureN
 }
 func (UnimplementedPodProviderServer) CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePod not implemented")
+}
+func (UnimplementedPodProviderServer) DeletePod(context.Context, *DeletePodRequest) (*DeletePodReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePod not implemented")
 }
 func (UnimplementedPodProviderServer) mustEmbedUnimplementedPodProviderServer() {}
 
@@ -125,6 +140,24 @@ func _PodProvider_CreatePod_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PodProvider_DeletePod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePodRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PodProviderServer).DeletePod(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PodProvider_DeletePod_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PodProviderServer).DeletePod(ctx, req.(*DeletePodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PodProvider_ServiceDesc is the grpc.ServiceDesc for PodProvider service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var PodProvider_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreatePod",
 			Handler:    _PodProvider_CreatePod_Handler,
+		},
+		{
+			MethodName: "DeletePod",
+			Handler:    _PodProvider_DeletePod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
