@@ -5,6 +5,9 @@
 *.dylib
 bin/
 
+# Move secrets out of pod spec and undo this.
+*pod.yml
+
 # Certificates
 *.pem
 !hack/skaffold/virtual-kubelet/vkubelet-mock-0-crt.pem
@@ -43,3 +46,5 @@ loganalytics.json
 debug
 
 vendor/
+
+
