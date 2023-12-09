@@ -6,7 +6,7 @@
 bin/
 
 # Move secrets out of pod spec and undo this.
-*/pod.yml
+hack/skaffold/virtual-kubelet/pod.yml
 
 # Certificates
 *.pem
