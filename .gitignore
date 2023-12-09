@@ -6,7 +6,7 @@
 bin/
 
 # Move secrets out of pod spec and undo this.
-pod.yml
+*/pod.yml
 
 # Certificates
 *.pem
