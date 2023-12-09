@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 
 	"github.com/virtual-kubelet/virtual-kubelet/log"
@@ -15,6 +16,11 @@ func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) er
 	logger := log.GetLogger(ctx)
 	logger.Info("CreatePod")
 
+	key, err := buildKey(pod)
+	if err != nil {
+		return err
+	}
+
 	pod_json, err := json.Marshal(pod)
 	if err != nil {
 		logger.Errorf("Couldn't marshal pod %v. %s", pod, err)
@@ -26,9 +32,9 @@ func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) er
 	}
 	_, err = provider.client.CreatePod(ctx, &request)
 	if err != nil {
-		logger.Errorf("Request failed %v. %s", request, err)
 		return err
 	}
+	provider.pods[key] = pod
 	return nil
 }
 
@@ -68,8 +74,11 @@ func (provider *GrpcProvider) DeletePod(ctx context.Context, pod *corev1.Pod) er
 // concurrently outside of the calling goroutine. Therefore it is recommended
 // to return a version after DeepCopy.
 func (*GrpcProvider) GetPod(ctx context.Context, namespace, name string) (*corev1.Pod, error) {
+	// This is only called for 2 reasons.
+	// 1. To check whether to call Update or Create a pod.
+	// 2. Ensure the pod exists before deleting it.
 	logger := log.GetLogger(ctx)
-	logger.Error("GetPod")
+	logger.Fatal("GetPod should never be called")
 	return nil, nil
 }
 
@@ -89,6 +98,25 @@ func (*GrpcProvider) GetPodStatus(ctx context.Context, namespace, name string) (
 // to return a version after DeepCopy.
 func (*GrpcProvider) GetPods(ctx context.Context) ([]*corev1.Pod, error) {
 	logger := log.GetLogger(ctx)
+
 	logger.Error("GetPods")
 	return nil, nil
+}
+
+
+// buildKey is a helper for building the "key" for the providers pod store.
+func buildKey(pod *corev1.Pod) (string, error) {
+	if pod.ObjectMeta.Namespace == "" {
+		return "", fmt.Errorf("pod namespace not found")
+	}
+
+	if pod.ObjectMeta.Name == "" {
+		return "", fmt.Errorf("pod name not found")
+	}
+
+	return buildKeyFromNames(pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+}
+
+func buildKeyFromNames(namespace string, name string) (string, error) {
+	return fmt.Sprintf("%s-%s", namespace, name), nil
 }

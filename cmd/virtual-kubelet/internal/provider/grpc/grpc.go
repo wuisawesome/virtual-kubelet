@@ -23,7 +23,7 @@ type GrpcProvider struct { //nolint:golint
 	// operatingSystem    string
 	// internalIP         string
 	// daemonEndpointPort int32
-	// pods               map[string]*v1.Pod
+	pods               map[string]*v1.Pod
 	// config             MockConfig
 	// startTime          time.Time
 	// notifier           func(*v1.Pod)

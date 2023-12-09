@@ -488,34 +488,16 @@ func (pc *PodController) syncPodFromKubernetesHandler(ctx context.Context, key s
 	// Get the Pod resource with this namespace/name.
 	pod, err := pc.podsLister.Pods(namespace).Get(name)
 	if err != nil {
-		if !errors.IsNotFound(err) {
-			// We've failed to fetch the pod from the lister, but the error is not a 404.
-			// Hence, we add the key back to the work queue so we can retry processing it later.
-			err := pkgerrors.Wrapf(err, "failed to fetch pod with key %q from lister", key)
-			span.SetStatus(err)
-			return err
+
+		if errors.IsNotFound(err) {
+			return pc.provider.DeletePod(ctx, pod)
 		}
 
-		pod, err = pc.provider.GetPod(ctx, namespace, name)
-		if err != nil && !errdefs.IsNotFound(err) {
-			err = pkgerrors.Wrapf(err, "failed to fetch pod with key %q from provider", key)
-			span.SetStatus(err)
-			return err
-		}
-		if errdefs.IsNotFound(err) || pod == nil {
-			return nil
-		}
-
-		err = pc.provider.DeletePod(ctx, pod)
-		if errdefs.IsNotFound(err) {
-			return nil
-		}
-		if err != nil {
-			err = pkgerrors.Wrapf(err, "failed to delete pod %q in the provider", loggablePodNameFromCoordinates(namespace, name))
-			span.SetStatus(err)
-		}
+		// We've failed to fetch the pod from the lister, but the error is not a 404.
+		// Hence, we add the key back to the work queue so we can retry processing it later.
+		err := pkgerrors.Wrapf(err, "failed to fetch pod with key %q from lister", key)
+		span.SetStatus(err)
 		return err
-
 	}
 
 	// At this point we know the Pod resource has either been created or updated (which includes being marked for deletion).
