@@ -18,11 +18,11 @@ message CreatePodReply {
   // Intentionally empty.
 }
 
-message DeletePodRequest {
-  string core_v1_pod_json = 1;
+message PrunePodsRequest {
+  repeated string core_v1_pod_jsons_to_keep = 1;
 }
 
-message DeletePodReply {
+message PrunePodsReply {
   // Intentionally empty.
 }
 
@@ -32,6 +32,7 @@ service PodProvider {
 
   rpc CreatePod(CreatePodRequest) returns (CreatePodReply);
 
-  rpc DeletePod(DeletePodRequest) returns (DeletePodReply);
+  rpc PrunePods(PrunePodsRequest) returns (PrunePodsReply);
+
 
 }

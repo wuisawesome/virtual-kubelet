@@ -38,8 +38,8 @@ type PodHandlerConfig struct { //nolint:golint
 	AttachToContainer ContainerAttachHandlerFunc
 	PortForward       PortForwardHandlerFunc
 	GetContainerLogs  ContainerLogsHandlerFunc
-	// GetPods is meant to enumerate the pods that the provider knows about
-	GetPods PodListerFunc
+	// // GetPods is meant to enumerate the pods that the provider knows about
+	// GetPods PodListerFunc
 	// GetPodsFromKubernetes is meant to enumerate the pods that the node is meant to be running
 	GetPodsFromKubernetes PodListerFunc
 	GetStatsSummary       PodStatsSummaryHandlerFunc
@@ -56,9 +56,9 @@ func PodHandler(p PodHandlerConfig, debug bool) http.Handler {
 
 	// This matches the behaviour in the reference kubelet
 	r.StrictSlash(true)
-	if debug {
-		r.HandleFunc("/runningpods/", HandleRunningPods(p.GetPods)).Methods("GET")
-	}
+	// if debug {
+	// 	r.HandleFunc("/runningpods/", HandleRunningPods(p.GetPods)).Methods("GET")
+	// }
 	r.HandleFunc("/pods", HandleRunningPods(p.GetPodsFromKubernetes)).Methods("GET")
 	r.HandleFunc("/containerLogs/{namespace}/{pod}/{container}", HandleContainerLogs(p.GetContainerLogs)).Methods("GET")
 	r.HandleFunc(

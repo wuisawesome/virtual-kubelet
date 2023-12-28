@@ -176,23 +176,6 @@ func (pc *PodController) handleProviderError(ctx context.Context, span trace.Spa
 	span.SetStatus(origErr)
 }
 
-func (pc *PodController) deletePod(ctx context.Context, pod *corev1.Pod) error {
-	ctx, span := trace.StartSpan(ctx, "deletePod")
-	defer span.End()
-	ctx = addPodAttributes(ctx, span, pod)
-
-	err := pc.provider.DeletePod(ctx, pod.DeepCopy())
-	if err != nil {
-		span.SetStatus(err)
-		pc.recorder.Event(pod, corev1.EventTypeWarning, podEventDeleteFailed, err.Error())
-		return err
-	}
-	pc.recorder.Event(pod, corev1.EventTypeNormal, podEventDeleteSuccess, "Delete pod in provider successfully")
-	log.G(ctx).Debug("Deleted pod from provider")
-
-	return nil
-}
-
 func shouldSkipPodStatusUpdate(pod *corev1.Pod) bool {
 	return pod.Status.Phase == corev1.PodSucceeded ||
 		pod.Status.Phase == corev1.PodFailed

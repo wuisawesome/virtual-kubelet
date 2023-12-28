@@ -68,7 +68,6 @@ func AttachProviderRoutes(mux api.ServeMux) NodeOpt {
 				RunInContainer:    p.RunInContainer,
 				AttachToContainer: p.AttachToContainer,
 				GetContainerLogs:  p.GetContainerLogs,
-				GetPods:           p.GetPods,
 				GetPodsFromKubernetes: func(context.Context) ([]*v1.Pod, error) {
 					return pods.List(labels.Everything())
 				},

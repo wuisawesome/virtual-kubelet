@@ -59,7 +59,7 @@ func main() {
 	opts.Version = strings.Join([]string{k8sVersion, "vk", buildVersion}, "-")
 
 	s := provider.NewStore()
-	registerMock(s)
+	// registerMock(s)
 	registerGrpc(s)
 
 	rootCmd := root.NewCommand(ctx, filepath.Base(os.Args[0]), s, opts)

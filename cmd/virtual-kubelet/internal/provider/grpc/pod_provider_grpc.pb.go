@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	PodProvider_ConfigureNode_FullMethodName = "/PodProvider/ConfigureNode"
 	PodProvider_CreatePod_FullMethodName     = "/PodProvider/CreatePod"
-	PodProvider_DeletePod_FullMethodName     = "/PodProvider/DeletePod"
+	PodProvider_PrunePods_FullMethodName     = "/PodProvider/PrunePods"
 )
 
 // PodProviderClient is the client API for PodProvider service.
@@ -30,7 +30,7 @@ const (
 type PodProviderClient interface {
 	ConfigureNode(ctx context.Context, in *ConfigureNodeRequest, opts ...grpc.CallOption) (*ConfigureNodeReply, error)
 	CreatePod(ctx context.Context, in *CreatePodRequest, opts ...grpc.CallOption) (*CreatePodReply, error)
-	DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*DeletePodReply, error)
+	PrunePods(ctx context.Context, in *PrunePodsRequest, opts ...grpc.CallOption) (*PrunePodsReply, error)
 }
 
 type podProviderClient struct {
@@ -59,9 +59,9 @@ func (c *podProviderClient) CreatePod(ctx context.Context, in *CreatePodRequest,
 	return out, nil
 }
 
-func (c *podProviderClient) DeletePod(ctx context.Context, in *DeletePodRequest, opts ...grpc.CallOption) (*DeletePodReply, error) {
-	out := new(DeletePodReply)
-	err := c.cc.Invoke(ctx, PodProvider_DeletePod_FullMethodName, in, out, opts...)
+func (c *podProviderClient) PrunePods(ctx context.Context, in *PrunePodsRequest, opts ...grpc.CallOption) (*PrunePodsReply, error) {
+	out := new(PrunePodsReply)
+	err := c.cc.Invoke(ctx, PodProvider_PrunePods_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *podProviderClient) DeletePod(ctx context.Context, in *DeletePodRequest,
 type PodProviderServer interface {
 	ConfigureNode(context.Context, *ConfigureNodeRequest) (*ConfigureNodeReply, error)
 	CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error)
-	DeletePod(context.Context, *DeletePodRequest) (*DeletePodReply, error)
+	PrunePods(context.Context, *PrunePodsRequest) (*PrunePodsReply, error)
 	mustEmbedUnimplementedPodProviderServer()
 }
 
@@ -88,8 +88,8 @@ func (UnimplementedPodProviderServer) ConfigureNode(context.Context, *ConfigureN
 func (UnimplementedPodProviderServer) CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePod not implemented")
 }
-func (UnimplementedPodProviderServer) DeletePod(context.Context, *DeletePodRequest) (*DeletePodReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeletePod not implemented")
+func (UnimplementedPodProviderServer) PrunePods(context.Context, *PrunePodsRequest) (*PrunePodsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PrunePods not implemented")
 }
 func (UnimplementedPodProviderServer) mustEmbedUnimplementedPodProviderServer() {}
 
@@ -140,20 +140,20 @@ func _PodProvider_CreatePod_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PodProvider_DeletePod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeletePodRequest)
+func _PodProvider_PrunePods_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrunePodsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PodProviderServer).DeletePod(ctx, in)
+		return srv.(PodProviderServer).PrunePods(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PodProvider_DeletePod_FullMethodName,
+		FullMethod: PodProvider_PrunePods_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PodProviderServer).DeletePod(ctx, req.(*DeletePodRequest))
+		return srv.(PodProviderServer).PrunePods(ctx, req.(*PrunePodsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -174,8 +174,8 @@ var PodProvider_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PodProvider_CreatePod_Handler,
 		},
 		{
-			MethodName: "DeletePod",
-			Handler:    _PodProvider_DeletePod_Handler,
+			MethodName: "PrunePods",
+			Handler:    _PodProvider_PrunePods_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

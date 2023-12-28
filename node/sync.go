@@ -60,14 +60,6 @@ func (p *syncProviderWrapper) DeletePod(ctx context.Context, pod *corev1.Pod) er
 	}
 
 	p.deletedPods.Store(key, pod)
-	if err := p.PodLifecycleHandler.DeletePod(ctx, pod.DeepCopy()); err != nil {
-		log.G(ctx).WithField("key", key).WithError(err).Debug("Removed key from deleted pods cache")
-		// We aren't going to actually delete the pod from the provider since there is an error so delete it from our cache,
-		// otherwise we could end up leaking pods in our deletion cache.
-		// Delete will be retried by the pod controller.
-		p.deletedPods.Delete(key)
-		return err
-	}
 
 	if shouldSkipPodStatusUpdate(pod) {
 		log.G(ctx).Debug("skipping pod status update for terminated pod")
@@ -89,6 +81,7 @@ func (p *syncProviderWrapper) DeletePod(ctx context.Context, pod *corev1.Pod) er
 	}
 	updated.Status.Reason = statusTerminatedReason
 
+	// TODO: Ideally we should make sure the `PodLifecycleHandler.PrunePods` gets called on this path.
 	p.notify(updated)
 	log.G(ctx).Debug("Notified pod terminal pod status")
 

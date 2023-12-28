@@ -29,6 +29,7 @@ import (
 	"github.com/virtual-kubelet/virtual-kubelet/trace"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -44,6 +45,12 @@ import (
 // Errors produced by these methods should implement an interface from
 // github.com/virtual-kubelet/virtual-kubelet/errdefs package in order for the
 // core logic to be able to understand the type of failure.
+//
+// A minor design note: this interface was reworked with the intention of
+// making it possible to more easily implement stateless pod providers, or
+// rather pod providers whose underlying state is represented in diverse ways
+// (e.g. exotic compute providers). It isn't always convenient to store entire
+// pod resources in these compute providers.
 type PodLifecycleHandler interface {
 	// CreatePod takes a Kubernetes Pod and deploys it within the provider.
 	CreatePod(ctx context.Context, pod *corev1.Pod) error
@@ -51,16 +58,8 @@ type PodLifecycleHandler interface {
 	// UpdatePod takes a Kubernetes Pod and updates it within the provider.
 	UpdatePod(ctx context.Context, pod *corev1.Pod) error
 
-	// DeletePod takes a Kubernetes Pod and deletes it from the provider. Once a pod is deleted, the provider is
-	// expected to call the NotifyPods callback with a terminal pod status where all the containers are in a terminal
-	// state, as well as the pod. DeletePod may be called multiple times for the same pod.
-	DeletePod(ctx context.Context, pod *corev1.Pod) error
-
-	// GetPod retrieves a pod by name from the provider (can be cached).
-	// The Pod returned is expected to be immutable, and may be accessed
-	// concurrently outside of the calling goroutine. Therefore it is recommended
-	// to return a version after DeepCopy.
-	GetPod(ctx context.Context, namespace, name string) (*corev1.Pod, error)
+	// Prune all pods except for the specified list of pods to keep.
+	PrunePods(context.Context, []*corev1.Pod) (error)
 
 	// GetPodStatus retrieves the status of a pod by name from the provider.
 	// The PodStatus returned is expected to be immutable, and may be accessed
@@ -68,11 +67,6 @@ type PodLifecycleHandler interface {
 	// to return a version after DeepCopy.
 	GetPodStatus(ctx context.Context, namespace, name string) (*corev1.PodStatus, error)
 
-	// GetPods retrieves a list of all pods running on the provider (can be cached).
-	// The Pods returned are expected to be immutable, and may be accessed
-	// concurrently outside of the calling goroutine. Therefore it is recommended
-	// to return a version after DeepCopy.
-	GetPods(context.Context) ([]*corev1.Pod, error)
 }
 
 // PodNotifier is used as an extension to PodLifecycleHandler to support async updates of pod statuses.
@@ -490,7 +484,9 @@ func (pc *PodController) syncPodFromKubernetesHandler(ctx context.Context, key s
 	if err != nil {
 
 		if errors.IsNotFound(err) {
-			return pc.provider.DeletePod(ctx, pod)
+			// TODO: We should figure out if this is actually
+			// possible still. If it is, we should trigger pod
+			// pruning here.
 		}
 
 		// We've failed to fetch the pod from the lister, but the error is not a 404.
@@ -544,17 +540,20 @@ func (pc *PodController) syncPodInProvider(ctx context.Context, pod *corev1.Pod,
 	// Check whether the pod has been marked for deletion.
 	// If it does, guarantee it is deleted in the provider and Kubernetes.
 	if pod.DeletionTimestamp != nil {
-		log.G(ctx).Debug("Deleting pod in provider")
-		if err := pc.deletePod(ctx, pod); errdefs.IsNotFound(err) {
-			log.G(ctx).Debug("Pod not found in provider")
-		} else if err != nil {
-			err := pkgerrors.Wrapf(err, "failed to delete pod %q in the provider", loggablePodName(pod))
-			span.SetStatus(err)
-			return err
-		}
 
+		// TODO: Can we just rely on/invoke pod pruning after the k8s
+		// pods are deleted? Probably not from a
+		// useability/debugability/realtime perspective. It would be
+		// much better to have the prune pod logic delete things with a
+		// deletion timestamp, and invoke the prune logic an extra time
+		// here first.
+
+		// NOTE: That todo up there is just a long and convoluted way
+		// of saying that this is eventually consistent.
 		key = fmt.Sprintf("%v/%v", key, pod.UID)
 		pc.deletePodsFromKubernetes.EnqueueWithoutRateLimitWithDelay(ctx, key, time.Second*time.Duration(*pod.DeletionGracePeriodSeconds))
+
+
 		return nil
 	}
 
@@ -578,67 +577,14 @@ func (pc *PodController) deleteDanglingPods(ctx context.Context, threadiness int
 	ctx, span := trace.StartSpan(ctx, "deleteDanglingPods")
 	defer span.End()
 
-	// Grab the list of pods known to the provider.
-	pps, err := pc.provider.GetPods(ctx)
+	// TODO: Ideally we should filter by the vkubelet selector.
+	k8sPods, err := pc.podsLister.List(labels.Everything())
+
+	err = pc.provider.PrunePods(ctx, k8sPods)
 	if err != nil {
-		err := pkgerrors.Wrap(err, "failed to fetch the list of pods from the provider")
-		span.SetStatus(err)
-		log.G(ctx).Error(err)
-		return
+		logger := log.GetLogger(ctx)
+		logger.Errorf("Pruning failed! %s", err)
 	}
-
-	// Create a slice to hold the pods we will be deleting from the provider.
-	ptd := make([]*corev1.Pod, 0)
-
-	// Iterate over the pods known to the provider, marking for deletion those that don't exist in Kubernetes.
-	// Take on this opportunity to populate the list of key that correspond to pods known to the provider.
-	for _, pp := range pps {
-		if _, err := pc.podsLister.Pods(pp.Namespace).Get(pp.Name); err != nil {
-			if errors.IsNotFound(err) {
-				// The current pod does not exist in Kubernetes, so we mark it for deletion.
-				ptd = append(ptd, pp)
-				continue
-			}
-			// For some reason we couldn't fetch the pod from the lister, so we propagate the error.
-			err := pkgerrors.Wrap(err, "failed to fetch pod from the lister")
-			span.SetStatus(err)
-			log.G(ctx).Error(err)
-			return
-		}
-	}
-
-	// We delete each pod in its own goroutine, allowing a maximum of "threadiness" concurrent deletions.
-	semaphore := make(chan struct{}, threadiness)
-	var wg sync.WaitGroup
-	wg.Add(len(ptd))
-
-	// Iterate over the slice of pods to be deleted and delete them in the provider.
-	for _, pod := range ptd {
-		go func(ctx context.Context, pod *corev1.Pod) {
-			defer wg.Done()
-
-			ctx, span := trace.StartSpan(ctx, "deleteDanglingPod")
-			defer span.End()
-
-			semaphore <- struct{}{}
-			defer func() {
-				<-semaphore
-			}()
-
-			// Add the pod's attributes to the current span.
-			ctx = addPodAttributes(ctx, span, pod)
-			// Actually delete the pod.
-			if err := pc.provider.DeletePod(ctx, pod.DeepCopy()); err != nil && !errdefs.IsNotFound(err) {
-				span.SetStatus(err)
-				log.G(ctx).Errorf("failed to delete pod %q in provider", loggablePodName(pod))
-			} else {
-				log.G(ctx).Infof("deleted leaked pod %q in provider", loggablePodName(pod))
-			}
-		}(ctx, pod)
-	}
-
-	// Wait for all pods to be deleted.
-	wg.Wait()
 }
 
 // loggablePodName returns the "namespace/name" key for the specified pod.
