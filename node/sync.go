@@ -151,7 +151,7 @@ func (p *syncProviderWrapper) updatePodStatus(ctx context.Context, podFromKubern
 	ctx = addPodAttributes(ctx, span, podFromKubernetes)
 
 	var statusErr error
-	podStatus, err := p.PodLifecycleHandler.GetPodStatus(ctx, podFromKubernetes.Namespace, podFromKubernetes.Name)
+	podStatus, err := p.PodLifecycleHandler.GetPodStatus(ctx, podFromKubernetes.Namespace, podFromKubernetes.Name, podFromKubernetes)
 	if err != nil {
 		if !errdefs.IsNotFound(err) {
 			span.SetStatus(err)

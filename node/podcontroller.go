@@ -65,8 +65,7 @@ type PodLifecycleHandler interface {
 	// The PodStatus returned is expected to be immutable, and may be accessed
 	// concurrently outside of the calling goroutine. Therefore it is recommended
 	// to return a version after DeepCopy.
-	GetPodStatus(ctx context.Context, namespace, name string) (*corev1.PodStatus, error)
-
+	GetPodStatus(ctx context.Context, namespace string, name string, status *corev1.Pod) (*corev1.PodStatus, error)
 }
 
 // PodNotifier is used as an extension to PodLifecycleHandler to support async updates of pod statuses.

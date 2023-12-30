@@ -26,6 +26,14 @@ message PrunePodsReply {
   // Intentionally empty.
 }
 
+message GetPodStatusRequest {
+  string core_v1_pod_json = 1;
+}
+
+message GetPodStatusReply {
+  string core_v1_pod_status_json = 1;
+}
+
 service PodProvider {
 
   rpc ConfigureNode(ConfigureNodeRequest) returns (ConfigureNodeReply);
@@ -34,5 +42,6 @@ service PodProvider {
 
   rpc PrunePods(PrunePodsRequest) returns (PrunePodsReply);
 
+  rpc GetPodStatus(GetPodStatusRequest) returns (GetPodStatusReply);
 
 }

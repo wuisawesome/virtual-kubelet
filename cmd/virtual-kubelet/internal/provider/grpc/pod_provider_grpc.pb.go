@@ -22,6 +22,7 @@ const (
 	PodProvider_ConfigureNode_FullMethodName = "/PodProvider/ConfigureNode"
 	PodProvider_CreatePod_FullMethodName     = "/PodProvider/CreatePod"
 	PodProvider_PrunePods_FullMethodName     = "/PodProvider/PrunePods"
+	PodProvider_GetPodStatus_FullMethodName  = "/PodProvider/GetPodStatus"
 )
 
 // PodProviderClient is the client API for PodProvider service.
@@ -31,6 +32,7 @@ type PodProviderClient interface {
 	ConfigureNode(ctx context.Context, in *ConfigureNodeRequest, opts ...grpc.CallOption) (*ConfigureNodeReply, error)
 	CreatePod(ctx context.Context, in *CreatePodRequest, opts ...grpc.CallOption) (*CreatePodReply, error)
 	PrunePods(ctx context.Context, in *PrunePodsRequest, opts ...grpc.CallOption) (*PrunePodsReply, error)
+	GetPodStatus(ctx context.Context, in *GetPodStatusRequest, opts ...grpc.CallOption) (*GetPodStatusReply, error)
 }
 
 type podProviderClient struct {
@@ -68,6 +70,15 @@ func (c *podProviderClient) PrunePods(ctx context.Context, in *PrunePodsRequest,
 	return out, nil
 }
 
+func (c *podProviderClient) GetPodStatus(ctx context.Context, in *GetPodStatusRequest, opts ...grpc.CallOption) (*GetPodStatusReply, error) {
+	out := new(GetPodStatusReply)
+	err := c.cc.Invoke(ctx, PodProvider_GetPodStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PodProviderServer is the server API for PodProvider service.
 // All implementations must embed UnimplementedPodProviderServer
 // for forward compatibility
@@ -75,6 +86,7 @@ type PodProviderServer interface {
 	ConfigureNode(context.Context, *ConfigureNodeRequest) (*ConfigureNodeReply, error)
 	CreatePod(context.Context, *CreatePodRequest) (*CreatePodReply, error)
 	PrunePods(context.Context, *PrunePodsRequest) (*PrunePodsReply, error)
+	GetPodStatus(context.Context, *GetPodStatusRequest) (*GetPodStatusReply, error)
 	mustEmbedUnimplementedPodProviderServer()
 }
 
@@ -90,6 +102,9 @@ func (UnimplementedPodProviderServer) CreatePod(context.Context, *CreatePodReque
 }
 func (UnimplementedPodProviderServer) PrunePods(context.Context, *PrunePodsRequest) (*PrunePodsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PrunePods not implemented")
+}
+func (UnimplementedPodProviderServer) GetPodStatus(context.Context, *GetPodStatusRequest) (*GetPodStatusReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPodStatus not implemented")
 }
 func (UnimplementedPodProviderServer) mustEmbedUnimplementedPodProviderServer() {}
 
@@ -158,6 +173,24 @@ func _PodProvider_PrunePods_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PodProvider_GetPodStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPodStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PodProviderServer).GetPodStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PodProvider_GetPodStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PodProviderServer).GetPodStatus(ctx, req.(*GetPodStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PodProvider_ServiceDesc is the grpc.ServiceDesc for PodProvider service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +209,10 @@ var PodProvider_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PrunePods",
 			Handler:    _PodProvider_PrunePods_Handler,
+		},
+		{
+			MethodName: "GetPodStatus",
+			Handler:    _PodProvider_GetPodStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

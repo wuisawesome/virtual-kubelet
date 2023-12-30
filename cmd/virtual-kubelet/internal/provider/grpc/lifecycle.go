@@ -16,11 +16,6 @@ func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) er
 	logger := log.GetLogger(ctx)
 	logger.Info("CreatePod")
 
-	key, err := buildKey(pod)
-	if err != nil {
-		return err
-	}
-
 	pod_json, err := json.Marshal(pod)
 	if err != nil {
 		logger.Errorf("Couldn't marshal pod %v. %s", pod, err)
@@ -34,7 +29,6 @@ func (provider *GrpcProvider) CreatePod(ctx context.Context, pod *corev1.Pod) er
 	if err != nil {
 		return err
 	}
-	provider.pods[key] = pod
 	return nil
 }
 
@@ -45,20 +39,10 @@ func (*GrpcProvider )UpdatePod(ctx context.Context, pod *corev1.Pod) error {
 	return nil
 }
 
-// DeletePod takes a Kubernetes Pod and deletes it from the provider. Once a pod is deleted, the provider is
-// expected to call the NotifyPods callback with a terminal pod status where all the containers are in a terminal
-// state, as well as the pod. DeletePod may be called multiple times for the same pod.
-func (provider *GrpcProvider) DeletePod(ctx context.Context, pod *corev1.Pod) error {
-	logger := log.GetLogger(ctx)
-	logger.Fatal("DeletePod should never be called")
-	return nil
-}
-
 // Prune all pods except for the specified list of pods to keep.
 func (provider *GrpcProvider) PrunePods(ctx context.Context, podsToKeep []*corev1.Pod) (error) {
 	logger := log.GetLogger(ctx)
 	logger.Info("PrunePods")
-
 
 	request := PrunePodsRequest{
 	}
@@ -72,7 +56,6 @@ func (provider *GrpcProvider) PrunePods(ctx context.Context, podsToKeep []*corev
 		request.CoreV1PodJsonsToKeep = append(request.CoreV1PodJsonsToKeep, string(pod_json))
 	}
 
-
 	_, err := provider.client.PrunePods(ctx, &request)
 	return err
 }
@@ -81,10 +64,29 @@ func (provider *GrpcProvider) PrunePods(ctx context.Context, podsToKeep []*corev
 // The PodStatus returned is expected to be immutable, and may be accessed
 // concurrently outside of the calling goroutine. Therefore it is recommended
 // to return a version after DeepCopy.
-func (*GrpcProvider) GetPodStatus(ctx context.Context, namespace string, name string) (*corev1.PodStatus, error) {
+func (provider *GrpcProvider) GetPodStatus(ctx context.Context, namespace string, name string, pod *corev1.Pod) (*corev1.PodStatus, error) {
 	logger := log.GetLogger(ctx)
-	logger.Error("GetPodStatus")
-	return nil, nil
+	logger.Info("GetPodStatus")
+
+	pod_json, err := json.Marshal(pod)
+	if err != nil {
+		logger.Errorf("Couldn't marshal pod %v. %s", pod, err)
+		return nil, err
+	}
+
+	request := GetPodStatusRequest{
+		CoreV1PodJson: string(pod_json),
+	}
+
+	reply, err := provider.client.GetPodStatus(ctx, &request)
+	if err != nil {
+		return nil, err
+	}
+
+	status := pod.Status.DeepCopy()
+	err = json.Unmarshal([]byte(reply.GetCoreV1PodStatusJson()), status)
+
+	return status, err
 }
 
 // buildKey is a helper for building the "key" for the providers pod store.
