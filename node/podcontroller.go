@@ -378,6 +378,11 @@ func (pc *PodController) Run(ctx context.Context, podSyncWorkers int) (retErr er
 				// If this pod was in the deletion queue, forget about it
 				key = fmt.Sprintf("%v/%v", key, k8sPod.UID)
 				pc.deletePodsFromKubernetes.Forget(ctx, key)
+				// Deleting the pod from the API server doesn't
+				// clean it up from the pod provider, so at
+				// this point, it's a good bet that there's a
+				// "dangling" pod.
+				pc.deleteDanglingPods(ctx, podSyncWorkers)
 			}
 		},
 	}

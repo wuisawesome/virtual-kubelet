@@ -12,7 +12,7 @@ spec:
     imagePullPolicy: Never
     env:
       - name: RUNPOD_API_KEY
-        value: 5RYV5MO4780S2SRSIIABR316E0MGZQGJLUNLBBX2
+        value: D691H3BX18SPRQIFR8ZWNLV04U4FQF25B8JZHIAL
   - name: vk
     image: virtual-kubelet:latest
     # Loaded into KinD

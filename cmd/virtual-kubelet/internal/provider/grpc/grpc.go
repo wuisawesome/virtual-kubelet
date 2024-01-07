@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"time"
 	"os"
 	"fmt"
 
@@ -35,19 +34,14 @@ type GrpcConfig struct { //nolint:golint
 }
 
 func newGrpcProvider(config GrpcConfig) (*GrpcProvider, error) {
-	for i := 0; i < 5; i++ {
-		grpcChannel, err := grpc.Dial(config.ServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			return &GrpcProvider{
-				client: NewPodProviderClient(grpcChannel),
-			}, nil
-		}
-		if i == 4 {
-			return nil, err
-		}
-		time.Sleep(5 * time.Second)
+	grpcChannel, err := grpc.Dial(config.ServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
 	}
-	return nil, nil
+
+	return &GrpcProvider{
+		client: NewPodProviderClient(grpcChannel),
+	}, nil
 }
 
 func loadGrpcConfig(configPath string) (config GrpcConfig, err error) {
